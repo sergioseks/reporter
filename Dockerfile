@@ -16,7 +16,7 @@ RUN find . -mindepth 1 -maxdepth 1 \
 FROM alpine:3.12
 COPY util/texlive.profile /
 
-RUN PACKAGES="wget libswitch-perl" \
+RUN PACKAGES="wget perl-switch" \
         && apk update \
         && apk add $PACKAGES \
         && apk add ca-certificates \
