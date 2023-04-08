@@ -1,8 +1,17 @@
-# build
+# build stage
 FROM golang:1.14.7-alpine3.12 AS build
+
+# set workdir
 WORKDIR /go/src/${owner:-github.com/sergioseks}/reporter
-RUN apk update && apk add make git
+
+# install dependencies
+RUN apk update \
+    && apk add git
+
+# copy source code
 COPY . .
+
+# install app
 RUN find . -mindepth 1 -maxdepth 1 \
            ! -name 'cmd' \
            ! -name 'grafana' \
@@ -14,14 +23,18 @@ RUN find . -mindepth 1 -maxdepth 1 \
 
 # create image
 FROM alpine:3.12
+
+# copy profile
 COPY util/texlive.profile /
 
+# install packages
 RUN PACKAGES="wget perl-switch" \
         && apk update \
         && apk add $PACKAGES \
         && apk add ca-certificates \
+        && apk add fontconfig \
         && wget -qO- \
-          "https://github.com/yihui/tinytex/raw/main/tools/install-unx.sh" | \
+          "https://raw.githubusercontent.com/rstudio/tinytex/main/tools/install-unx.sh" | \
           sh -s - --admin --no-path \
         && mv ~/.TinyTeX /opt/TinyTeX \
         && /opt/TinyTeX/bin/*/tlmgr path add \
@@ -35,6 +48,8 @@ RUN PACKAGES="wget perl-switch" \
         && apk del --purge -qq \
         && rm -rf /var/lib/apt/lists/*
 
-
+# copy binary from stage build to user bin directory
 COPY --from=build /go/bin/grafana-reporter /usr/local/bin
+
+# set command to run
 ENTRYPOINT [ "/usr/local/bin/grafana-reporter" ]
